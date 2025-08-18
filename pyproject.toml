@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling>=1.20.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fast-validation"
+version = "0.1.0"
+description = "Shared validation primitives (Schema, ValidatorRule, ValidationRuleException) for fast-app and fast-agents."
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.6,<3",
+]
+authors = [
+    { name = "Patrik Mojzis", email = "patrikm53@gmail.com" }
+]
+readme = { text = "fast-validation: one source of truth for validation logic.", content-type = "text/plain" }
+keywords = ["validation", "pydantic", "schema", "rules"]
+
+[project.urls]
+Homepage = "https://fast-validation.patrikmojzis.com"
+Documentation = "https://fast-validation.patrikmojzis.com"
+Repository = "https://github.com/patrikmojzis/fast-validation"
+"Bug Reports" = "https://github.com/patrikmojzis/fast-validation/issues"
+Changelog = "https://github.com/patrikmojzis/fast-validation/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fast_validation"]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7,<9",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.hatch.build.targets.wheel.force-include]
+"fast_validation/py.typed" = "fast_validation/py.typed"
+
