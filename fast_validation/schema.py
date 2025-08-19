@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .validation_rule import ValidatorRule
 from .exceptions import ValidationRuleException
@@ -21,6 +21,15 @@ class Schema(BaseModel):
 
     class Meta:  # Override in subclasses
         rules: List["Schema.Rule"] = []
+
+    model_config = ConfigDict(
+        str_strip_whitespace = True,
+        validate_assignment = True,  # whether to validate when data changed
+        from_attributes = True,  # whether to build models and look up discriminators of tagged unions using python object attributes
+        use_enum_values = True,  # whether to populate models with the value property of enums, rather than the raw enum
+        extra = "ignore",  # ignore extra fields
+        arbitrary_types_allowed = True,  # whether arbitrary types are allowed in models
+    )
 
     async def validate(self, *, partial: bool = False) -> None:
         data = self.model_dump(exclude_unset=partial)
