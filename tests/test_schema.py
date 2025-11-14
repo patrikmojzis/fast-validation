@@ -49,5 +49,3 @@ def test_path_resolution_for_list_items():
         (("items", "0", "x"), 1),
         (("items", "1", "x"), 2),
     ]
-
-
