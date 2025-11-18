@@ -4,9 +4,9 @@ from typing import Any, List, Tuple
 
 from pydantic import BaseModel, ConfigDict
 
-from .validation_rule import ValidatorRule
 from .exceptions import ValidationRuleException
 from .paths import resolve_path_expressions
+from .validation_rule import ValidatorRule
 
 
 class Schema(BaseModel):
@@ -149,4 +149,3 @@ class Schema(BaseModel):
                 "type": exc.error_type,
             }
         ]
-
