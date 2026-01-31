@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fast-validation"
-version = "0.1.0"
+version = "0.1.1"
 description = "Shared validation primitives (Schema, ValidatorRule, ValidationRuleException) for fast-app and fast-agents."
 requires-python = ">=3.10"
 dependencies = [
