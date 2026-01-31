@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 
-from .exceptions import ValidationRuleException
+from .exceptions import ValidationNotRunException, ValidationRuleException
 from .paths import resolve_path_expressions
 from .validation_rule import ValidatorRule
 
@@ -13,6 +13,8 @@ class Schema(BaseModel):
     """
     Base schema with optional post-parse rule validation.
     """
+
+    _validated: dict[str, Any] | None = PrivateAttr(default=None)
 
     class Rule:  # Simple container for rule path and its validators
         def __init__(self, path: str, validators: List[ValidatorRule]) -> None:
@@ -32,6 +34,7 @@ class Schema(BaseModel):
     )
 
     async def validate(self, *, partial: bool = False) -> None:
+        self._validated = None
         nested_errors = await self._gather_nested_schema_errors(partial=partial)
         data = self.model_dump(exclude_unset=partial)
 
@@ -63,6 +66,16 @@ class Schema(BaseModel):
                 error_type="rule_error",
                 errors=errors,
             )
+
+        self._validated = data
+
+    @property
+    def validated(self) -> dict[str, Any]:
+        if self._validated is None:
+            raise ValidationNotRunException(
+                "validated is only available after validate() succeeds"
+            )
+        return self._validated
 
     async def _gather_nested_schema_errors(self, *, partial: bool) -> List[dict[str, Any]]:
         errors: List[dict[str, Any]] = []

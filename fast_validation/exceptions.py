@@ -25,3 +25,8 @@ class ValidationRuleException(ValueError):
         self.errors: list[dict[str, Any]] | None = errors
 
 
+class ValidationNotRunException(AttributeError):
+    """
+    Raised when accessing validation-only data before validate() succeeds.
+    """
+

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import pytest
-
 from fast_validation import (
     Schema,
     ValidatorRule,
+    ValidationNotRunException,
     ValidationRuleException,
 )
-
 from fast_validation.paths import resolve_path_expressions
 
 
@@ -40,6 +39,22 @@ async def test_rule_validation_failure_collects_errors():
     assert isinstance(exc, ValidationRuleException)
     assert exc.error_type == "rule_error"
     assert exc.errors and exc.errors[0]["loc"] == ("value",)
+
+
+@pytest.mark.asyncio
+async def test_validate_sets_validated_on_success():
+    item = ItemSchema(value=42)
+    await item.validate()
+    assert item.validated == {"value": 42}
+
+
+@pytest.mark.asyncio
+async def test_validate_does_not_set_validated_on_failure():
+    item = ItemSchema(value=41)
+    with pytest.raises(ValidationRuleException):
+        await item.validate()
+    with pytest.raises(ValidationNotRunException):
+        _ = item.validated
 
 
 def test_path_resolution_for_list_items():
