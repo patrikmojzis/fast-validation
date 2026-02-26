@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+
 from fast_validation import (
     Schema,
     ValidatorRule,
@@ -28,6 +29,13 @@ class ItemSchema(Schema):
 
     class Meta:
         rules = [Schema.Rule("$.value", [MustEqual(42)])]
+
+
+class DictRuleSchema(Schema):
+    value: int
+
+    class Meta:
+        rules = {"$.value": MustEqual(42)}
 
 
 @pytest.mark.asyncio
@@ -64,3 +72,15 @@ def test_path_resolution_for_list_items():
         (("items", "0", "x"), 1),
         (("items", "1", "x"), 2),
     ]
+
+
+@pytest.mark.asyncio
+async def test_dict_rules_are_supported():
+    item = DictRuleSchema(value=41)
+    with pytest.raises(ValidationRuleException) as excinfo:
+        await item.validate()
+    exc = excinfo.value
+    assert exc.errors and exc.errors[0]["loc"] == ("value",)
+
+    ok = DictRuleSchema(value=42)
+    await ok.validate()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any, Iterable, List, Mapping, Tuple
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 
@@ -22,7 +22,10 @@ class Schema(BaseModel):
             self.validators = validators
 
     class Meta:  # Override in subclasses
-        rules: List["Schema.Rule"] = []
+        rules: (
+            List["Schema.Rule"]
+            | Mapping[str, ValidatorRule | List[ValidatorRule] | Tuple[ValidatorRule, ...]]
+        ) = []
 
     model_config = ConfigDict(
         str_strip_whitespace = True,
@@ -38,7 +41,8 @@ class Schema(BaseModel):
         nested_errors = await self._gather_nested_schema_errors(partial=partial)
         data = self.model_dump(exclude_unset=partial)
 
-        rules: List[Schema.Rule] = getattr(self.Meta, "rules", []) or []
+        raw_rules = getattr(self.Meta, "rules", []) or []
+        rules: List[Schema.Rule] = self._normalize_rules(raw_rules)
         errors: List[dict[str, Any]] = list(nested_errors)
 
         for rule in rules:
@@ -92,6 +96,35 @@ class Schema(BaseModel):
                 )
             )
         return errors
+
+    @staticmethod
+    def _normalize_rules(raw_rules: Any) -> List["Schema.Rule"]:
+        if not raw_rules:
+            return []
+
+        if isinstance(raw_rules, Mapping):
+            normalized: List[Schema.Rule] = []
+            for path, validators in raw_rules.items():
+                if isinstance(validators, ValidatorRule):
+                    normalized.append(Schema.Rule(path, [validators]))
+                    continue
+                if isinstance(validators, (list, tuple)):
+                    normalized.append(Schema.Rule(path, list(validators)))
+                    continue
+                raise TypeError(
+                    "Meta.rules mapping values must be a ValidatorRule or a list/tuple of ValidatorRule instances."
+                )
+            return normalized
+
+        if isinstance(raw_rules, (list, tuple)):
+            return list(raw_rules)
+
+        if isinstance(raw_rules, Iterable) and not isinstance(raw_rules, (str, bytes)):
+            return list(raw_rules)
+
+        raise TypeError(
+            "Meta.rules must be a list of Schema.Rule instances or a mapping of path to validators."
+        )
 
     async def _collect_errors_from_value(
         self,

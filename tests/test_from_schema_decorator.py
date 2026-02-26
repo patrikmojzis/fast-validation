@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from typing import get_args
 
 from pydantic import Field
@@ -43,6 +44,16 @@ class ProductCustomRules:
         rules = [Schema.Rule("$.price", [])]
 
 
+@from_schema(BaseProductSchema, partial=True)
+class ProductUpdateFromABC(ABC):
+    pass
+
+
+@from_schema(BaseProductSchema, partial=True)
+class ProductUpdateSchemaBase(Schema):
+    pass
+
+
 def test_from_schema_inherits_fields_and_meta():
     name_field = ProductStoreSchema.model_fields["name"]
     assert name_field.description == "Product name."
@@ -69,3 +80,15 @@ def test_extra_fields_can_be_added():
 
 def test_meta_rules_can_be_overridden():
     assert ProductCustomRules.Meta.rules[0].path == "$.price"
+
+
+def test_partial_schema_from_abc_skips_abc_internal_private_attrs():
+    schema = ProductUpdateFromABC()
+    assert schema.model_dump(exclude_unset=True) == {}
+    assert "_abc_impl" not in ProductUpdateFromABC.__private_attributes__
+
+
+def test_partial_schema_with_schema_base_skips_abc_internal_private_attrs():
+    schema = ProductUpdateSchemaBase()
+    assert schema.model_dump(exclude_unset=True) == {}
+    assert "_abc_impl" not in ProductUpdateSchemaBase.__private_attributes__

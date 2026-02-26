@@ -9,6 +9,17 @@ from .schema import Schema
 
 SchemaType = TypeVar("SchemaType", bound="Schema")
 _MISSING = object()
+_SKIPPED_NAMESPACE_ATTRS = {
+    "__dict__",
+    "__weakref__",
+    "__annotations__",
+    "__module__",
+    "__doc__",
+    "__qualname__",
+    "__abstractmethods__",
+    "Meta",
+    "_abc_impl",
+}
 
 
 def from_schema(
@@ -54,14 +65,7 @@ def _build_schema_from_base(
     }
 
     for key, value in target_cls.__dict__.items():
-        if key in {
-            "__dict__",
-            "__weakref__",
-            "__annotations__",
-            "__module__",
-            "__doc__",
-            "Meta",
-        }:
+        if _should_skip_namespace_attr(key):
             continue
         namespace[key] = value
 
@@ -104,6 +108,10 @@ def _build_schema_from_base(
     derived.Meta = meta
     derived.__from_schema_base__ = base_schema
     derived.__from_schema_partial__ = make_partial
+    # Ensure Pydantic rebuilds schema/validators from the new class namespace.
+    # Without this, copied internals from the decorator target can leave the
+    # derived model with an empty core schema (input gets ignored as extra).
+    derived.model_rebuild(force=True)
     return derived
 
 
@@ -134,3 +142,12 @@ def _copy_field_info(*, field_info: FieldInfo, force_optional: bool) -> FieldInf
         clone.default = None
         clone.default_factory = None
     return clone
+
+
+def _should_skip_namespace_attr(key: str) -> bool:
+    if key in _SKIPPED_NAMESPACE_ATTRS:
+        return True
+    if key.startswith("_abc_"):
+        return True
+    # Never copy generated pydantic internals from the decorator target class.
+    return key.startswith("__pydantic_")
